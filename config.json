@@ -1,0 +1,3 @@
+{
+  "ctrl+1+c": "if process \"chrome.exe\" running then toast \"chrome is running\" else open \"start chrome\""
+}

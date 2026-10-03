@@ -1,0 +1,86 @@
+# Lenovo IdeaPad Slim 3 15ABR8 - Core Control Suite
+
+**Core Control Suite** is a low-level automation utility, background shortcut manager, and telemetry monitor built specifically for the **Lenovo IdeaPad Slim 3 15ABR8** laptop running Windows 11. 
+
+The project follows a modular architecture utilizing **CustomTkinter** for the graphical user interface, the **WinRT API** for native OS integration, and a custom asynchronous string-based command interpreter implemented in `hotcases.py`.
+
+---
+
+## 🚀 Hardware Trigger Specification (Scan Codes)
+
+In addition to standard key combinations (e.g., `ctrl+alt+x`), the engine supports direct low-level interception of the laptop's dedicated hardware buttons via their system **Scan Codes**:
+
+*   **`183`** — Dedicated Calculator hardware button (co-located with `F12`). Registering this code completely intercepts and blocks the default Windows calculator popup (`suppress=True`) and executes your custom defined event instead.
+
+---
+
+## 📜 Full Syntax & Event Engine Command Catalog
+
+The engine supports two execution modes: **Single System Commands** and **Conditional Statements (IF-THEN-ELSE)**.
+
+### 1. Single Base Commands
+
+| Command & Syntax | Description | Example Usage |
+| :--- | :--- | :--- |
+| **`open "<app_name_or_path>"`** | Launches an application via the Windows system `PATH` environment variable or using a direct path to the `.exe` file. It is recommended to use the `start` prefix to ensure stable GUI execution. | `open "start chrome"`<br>`open "notepad"`<br>`open "C:\Program Files\..."` |
+| **`url "<link>"`** | Instantly opens the specified web address using the default system web browser. | `url "https://github.com"`<br>`url "https://google.com"` |
+| **`cmd "<cli_command>"`** | Spawns a new Command Prompt (`cmd.exe`) window and executes the specified CLI instruction within the current project directory. | `cmd "git status"`<br>`cmd "docker-compose up"` |
+| **`kill "<process_name.exe>"`** | Forcefully terminates the specified process along with its entire process tree, bypassing any OS confirmation dialogs (`taskkill /F /T`). | `kill "chrome.exe"`<br>`kill "discord.exe"` |
+| **`toast "<message_text>"`** | Displays a native, modern Windows 11 toast notification banner in the bottom-right corner of the screen using the WinRT API via the `win11toast` library. | `toast "Project compiled successfully!"` |
+
+---
+
+### 2. Conditional Statements (`IF-THEN-ELSE`)
+
+The scripting engine continuously monitors the state of Windows processes and the laptop's hardware sensors in real-time.
+
+#### A. Process Activity Checks (`Process Condition`)
+Allows creating **cyclic toggle shortcuts** (Toggle Switches). If the target process is currently active, one action is performed; otherwise, an alternate action is executed.
+*   **Syntax:** `if process "<name.exe>" running then <command> [else <command>]`
+*   **Example:**
+    ```text
+    if process "chrome.exe" running then kill "chrome.exe" else open "start chrome"
+    ```
+
+#### B. Hardware Telemetry Checks (`Hardware Conditions`)
+The engine has direct programmatic access to the laptop's power and performance subsystems. The following live variables are available:
+*   `cpu` — Current AMD Ryzen CPU utilization layer in % (integer from 0 to 100).
+*   `battery` — Current battery charge capacity state in % (integer from 0 to 100).
+*   `charging` — AC power grid connection state (`True` — charging/plugged in, `False` — discharging/running on battery).
+
+**Examples of Use:**
+*   **Critical Battery Power Control:**
+    ```text
+    if battery < 20 and not charging then toast "Battery low! Please connect your Lenovo power adapter!"
+    ```
+*   **CPU Thermal / Throttling Monitoring:**
+    ```text
+    if cpu > 85 then toast "Warning! Ryzen processor is under extreme utilization!"
+    ```
+
+---
+
+## 💾 Configuration Database Structure (`config.json`)
+
+All created hotkeys and mapped dynamic rules are automatically serialized into a structured `config.json` file located in the application root directory. You can edit them via the GUI manager tab or modify them manually using any raw text editor:
+
+```json
+{
+  "ctrl+alt+x": "open \"code\"",
+  "183": "if cpu > 80 then toast \"Ryzen thermal load is high!\" else cmd \"git status\"",
+  "ctrl+alt+t": "if battery < 25 and not charging then toast \"Low battery state detected!\" else open \"cmd\"",
+  "ctrl+1+c": "if process \"chrome.exe\" running then toast \"chrome is running\" else open \"start chrome\""
+}
+```
+
+---
+
+## 🛠️ System Requirements & Dependencies
+
+To ensure stable background loop operations, UI rendering, and native Windows 11 notifications, the following packages must be installed in your python environment:
+
+```bash
+pip install customtkinter wmi psutil keyboard pystray pillow win11toast
+```
+
+*Note: Accessing certain low-level system variables (such as checking the Secure Boot status in the UEFI NVRAM) may require running the main `monitor.py` script with administrator privileges.*
